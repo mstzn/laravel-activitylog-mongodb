@@ -3,101 +3,195 @@
 namespace Spatie\Activitylog\Models;
 
 use Illuminate\Database\Eloquent\Builder;
-use Jenssegers\Mongodb\Eloquent\Model as Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Spatie\Activitylog\Contracts\Activity as ActivityContract;
 
-class Activity extends Model implements ActivityContract
-{
-    public $guarded = [];
-
-    protected $casts = [
-        'properties' => 'collection',
-    ];
-
-    public function __construct(array $attributes = [])
+if(class_exists('Jenssegers\Mongodb\Eloquent\Model')) {
+    class Activity extends Jenssegers\Mongodb\Eloquent\Model implements ActivityContract
     {
-        if (! isset($this->connection)) {
-            $this->setConnection(config('activitylog.database_connection'));
+        public $guarded = [];
+
+        protected $casts = [
+            'properties' => 'collection',
+        ];
+
+        public function __construct(array $attributes = [])
+        {
+            if (! isset($this->connection)) {
+                $this->setConnection(config('activitylog.database_connection'));
+            }
+
+            if (! isset($this->table)) {
+                $this->setTable(config('activitylog.table_name'));
+            }
+
+            parent::__construct($attributes);
         }
 
-        if (! isset($this->table)) {
-            $this->setTable(config('activitylog.table_name'));
+        public function subject(): MorphTo
+        {
+            if (config('activitylog.subject_returns_soft_deleted_models')) {
+                return $this->morphTo()->withTrashed();
+            }
+
+            return $this->morphTo();
         }
 
-        parent::__construct($attributes);
-    }
-
-    public function subject(): MorphTo
-    {
-        if (config('activitylog.subject_returns_soft_deleted_models')) {
-            return $this->morphTo()->withTrashed();
+        public function causer(): MorphTo
+        {
+            return $this->morphTo();
         }
 
-        return $this->morphTo();
-    }
-
-    public function causer(): MorphTo
-    {
-        return $this->morphTo();
-    }
-
-    public function getExtraProperty(string $propertyName): mixed
-    {
-        return Arr::get($this->properties->toArray(), $propertyName);
-    }
-
-    public function changes(): Collection
-    {
-        if (! $this->properties instanceof Collection) {
-            return new Collection();
+        public function getExtraProperty(string $propertyName): mixed
+        {
+            return Arr::get($this->properties->toArray(), $propertyName);
         }
 
-        return $this->properties->only(['attributes', 'old']);
-    }
+        public function changes(): Collection
+        {
+            if (! $this->properties instanceof Collection) {
+                return new Collection();
+            }
 
-    public function getChangesAttribute(): Collection
-    {
-        return $this->changes();
-    }
-
-    public function scopeInLog(Builder $query, ...$logNames): Builder
-    {
-        if (is_array($logNames[0])) {
-            $logNames = $logNames[0];
+            return $this->properties->only(['attributes', 'old']);
         }
 
-        return $query->whereIn('log_name', $logNames);
-    }
+        public function getChangesAttribute(): Collection
+        {
+            return $this->changes();
+        }
 
-    public function scopeCausedBy(Builder $query, Model $causer): Builder
-    {
-        return $query
-            ->where('causer_type', $causer->getMorphClass())
-            ->where('causer_id', $causer->getKey());
-    }
+        public function scopeInLog(Builder $query, ...$logNames): Builder
+        {
+            if (is_array($logNames[0])) {
+                $logNames = $logNames[0];
+            }
 
-    public function scopeForSubject(Builder $query, Model $subject): Builder
-    {
-        return $query
-            ->where('subject_type', $subject->getMorphClass())
-            ->where('subject_id', $subject->getKey());
-    }
+            return $query->whereIn('log_name', $logNames);
+        }
 
-    public function scopeForEvent(Builder $query, string $event): Builder
-    {
-        return $query->where('event', $event);
-    }
+        public function scopeCausedBy(Builder $query, Jenssegers\Mongodb\Eloquent\Model $causer): Builder
+        {
+            return $query
+                ->where('causer_type', $causer->getMorphClass())
+                ->where('causer_id', $causer->getKey());
+        }
 
-    public function scopeHasBatch(Builder $query): Builder
-    {
-        return $query->whereNotNull('batch_uuid');
-    }
+        public function scopeForSubject(Builder $query, Jenssegers\Mongodb\Eloquent\Model $subject): Builder
+        {
+            return $query
+                ->where('subject_type', $subject->getMorphClass())
+                ->where('subject_id', $subject->getKey());
+        }
 
-    public function scopeForBatch(Builder $query, string $batchUuid): Builder
+        public function scopeForEvent(Builder $query, string $event): Builder
+        {
+            return $query->where('event', $event);
+        }
+
+        public function scopeHasBatch(Builder $query): Builder
+        {
+            return $query->whereNotNull('batch_uuid');
+        }
+
+        public function scopeForBatch(Builder $query, string $batchUuid): Builder
+        {
+            return $query->where('batch_uuid', $batchUuid);
+        }
+    }
+} else {
+    class Activity extends Illuminate\Database\Eloquent\Model implements ActivityContract
     {
-        return $query->where('batch_uuid', $batchUuid);
+        public $guarded = [];
+
+        protected $casts = [
+            'properties' => 'collection',
+        ];
+
+        public function __construct(array $attributes = [])
+        {
+            if (! isset($this->connection)) {
+                $this->setConnection(config('activitylog.database_connection'));
+            }
+
+            if (! isset($this->table)) {
+                $this->setTable(config('activitylog.table_name'));
+            }
+
+            parent::__construct($attributes);
+        }
+
+        public function subject(): MorphTo
+        {
+            if (config('activitylog.subject_returns_soft_deleted_models')) {
+                return $this->morphTo()->withTrashed();
+            }
+
+            return $this->morphTo();
+        }
+
+        public function causer(): MorphTo
+        {
+            return $this->morphTo();
+        }
+
+        public function getExtraProperty(string $propertyName): mixed
+        {
+            return Arr::get($this->properties->toArray(), $propertyName);
+        }
+
+        public function changes(): Collection
+        {
+            if (! $this->properties instanceof Collection) {
+                return new Collection();
+            }
+
+            return $this->properties->only(['attributes', 'old']);
+        }
+
+        public function getChangesAttribute(): Collection
+        {
+            return $this->changes();
+        }
+
+        public function scopeInLog(Builder $query, ...$logNames): Builder
+        {
+            if (is_array($logNames[0])) {
+                $logNames = $logNames[0];
+            }
+
+            return $query->whereIn('log_name', $logNames);
+        }
+
+        public function scopeCausedBy(Builder $query, Illuminate\Database\Eloquent\Model $causer): Builder
+        {
+            return $query
+                ->where('causer_type', $causer->getMorphClass())
+                ->where('causer_id', $causer->getKey());
+        }
+
+        public function scopeForSubject(Builder $query, Illuminate\Database\Eloquent\Model $subject): Builder
+        {
+            return $query
+                ->where('subject_type', $subject->getMorphClass())
+                ->where('subject_id', $subject->getKey());
+        }
+
+        public function scopeForEvent(Builder $query, string $event): Builder
+        {
+            return $query->where('event', $event);
+        }
+
+        public function scopeHasBatch(Builder $query): Builder
+        {
+            return $query->whereNotNull('batch_uuid');
+        }
+
+        public function scopeForBatch(Builder $query, string $batchUuid): Builder
+        {
+            return $query->where('batch_uuid', $batchUuid);
+        }
     }
 }
