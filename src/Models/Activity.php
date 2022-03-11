@@ -8,8 +8,8 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Spatie\Activitylog\Contracts\Activity as ActivityContract;
 
-if(class_exists('Jenssegers\Mongodb\Eloquent\Model')) {
-    class Activity extends Jenssegers\Mongodb\Eloquent\Model implements ActivityContract
+if(class_exists('\Jenssegers\Mongodb\Eloquent\Model')) {
+    class Activity extends \Jenssegers\Mongodb\Eloquent\Model implements ActivityContract
     {
         public $guarded = [];
 
@@ -72,14 +72,14 @@ if(class_exists('Jenssegers\Mongodb\Eloquent\Model')) {
             return $query->whereIn('log_name', $logNames);
         }
 
-        public function scopeCausedBy(Builder $query, Jenssegers\Mongodb\Eloquent\Model $causer): Builder
+        public function scopeCausedBy(Builder $query, \Jenssegers\Mongodb\Eloquent\Model $causer): Builder
         {
             return $query
                 ->where('causer_type', $causer->getMorphClass())
                 ->where('causer_id', $causer->getKey());
         }
 
-        public function scopeForSubject(Builder $query, Jenssegers\Mongodb\Eloquent\Model $subject): Builder
+        public function scopeForSubject(Builder $query, \Jenssegers\Mongodb\Eloquent\Model $subject): Builder
         {
             return $query
                 ->where('subject_type', $subject->getMorphClass())
@@ -102,7 +102,7 @@ if(class_exists('Jenssegers\Mongodb\Eloquent\Model')) {
         }
     }
 } else {
-    class Activity extends Illuminate\Database\Eloquent\Model implements ActivityContract
+    class Activity extends \Illuminate\Database\Eloquent\Model implements ActivityContract
     {
         public $guarded = [];
 
@@ -165,14 +165,14 @@ if(class_exists('Jenssegers\Mongodb\Eloquent\Model')) {
             return $query->whereIn('log_name', $logNames);
         }
 
-        public function scopeCausedBy(Builder $query, Illuminate\Database\Eloquent\Model $causer): Builder
+        public function scopeCausedBy(Builder $query, \Illuminate\Database\Eloquent\Model $causer): Builder
         {
             return $query
                 ->where('causer_type', $causer->getMorphClass())
                 ->where('causer_id', $causer->getKey());
         }
 
-        public function scopeForSubject(Builder $query, Illuminate\Database\Eloquent\Model $subject): Builder
+        public function scopeForSubject(Builder $query, \Illuminate\Database\Eloquent\Model $subject): Builder
         {
             return $query
                 ->where('subject_type', $subject->getMorphClass())
